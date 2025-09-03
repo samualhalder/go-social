@@ -19,3 +19,5 @@ create:
 
 seed:
 	go run cmd/migrate/seed/main.go
+swag:
+	swag init -g .\cmd\api\main.go

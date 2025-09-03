@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/samualhalder/go-social/internal/store"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type application struct {
@@ -38,7 +40,7 @@ func (app *application) mount() http.Handler {
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
-
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheck)
 		r.Route("/posts", func(r chi.Router) {

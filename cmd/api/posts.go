@@ -21,6 +21,16 @@ type PostData struct {
 	Tags    []string `json:"tags" validate:"required"`
 }
 
+// createPost godoc
+// @Summary Create a new post
+// @Description Creates a new post for the authenticated user
+// @Tags posts
+// @Accept json
+// @Produce json
+// @Param post body map[string]string true "Post content"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/posts/create [post]
 func (app *application) createPost(w http.ResponseWriter, r *http.Request) {
 	var payload PostData
 	if err := readJSON(w, r, &payload); err != nil {
@@ -52,7 +62,7 @@ func (app *application) createPost(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromContext(r)
-	
+
 	comments, err := app.store.Comment.GetCommentByPostId(r.Context(), post.Id)
 	if err != nil {
 		app.internalServerError(w, r, err)

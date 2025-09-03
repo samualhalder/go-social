@@ -1,0 +1,62 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact:
+    email: your-email@example.com
+    name: Samual Halder
+  description: This is the API documentation for Go Social project.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go Social API
+  version: "1.0"
+paths:
+  /api/v1/health:
+    get:
+      description: Responds with status OK to show server is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - health
+  /api/v1/posts/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new post for the authenticated user
+      parameters:
+      - description: Post content
+        in: body
+        name: post
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new post
+      tags:
+      - posts
+swagger: "2.0"

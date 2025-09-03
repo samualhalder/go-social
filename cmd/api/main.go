@@ -1,3 +1,17 @@
+// @title Go Social API
+// @version 1.0
+// @description This is the API documentation for Go Social project.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Samual Halder
+// @contact.email your-email@example.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+
 package main
 
 import (
@@ -5,9 +19,10 @@ import (
 	"log/slog"
 
 	"github.com/joho/godotenv"
+	_ "github.com/samualhalder/go-social/docs"
 	"github.com/samualhalder/go-social/internal/db"
 	"github.com/samualhalder/go-social/internal/env"
-	"github.com/samualhalder/go-social/internal/store"
+	"github.com/samualhalder/go-social/internal/store" // swagger docs
 )
 
 func main() {
