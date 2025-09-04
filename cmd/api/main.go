@@ -16,13 +16,13 @@ package main
 
 import (
 	"log"
-	"log/slog"
 
 	"github.com/joho/godotenv"
 	_ "github.com/samualhalder/go-social/docs"
 	"github.com/samualhalder/go-social/internal/db"
 	"github.com/samualhalder/go-social/internal/env"
 	"github.com/samualhalder/go-social/internal/store" // swagger docs
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -36,15 +36,19 @@ func main() {
 		maxIdleConn: env.GetInt("MAX_IDLE_CONN", 30),
 		maxIdleTime: env.GetString("MAX_IDLE_TIME", "15m"),
 	}}
+
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	db, err := db.New(cnf.db.addr, cnf.db.maxOpenConn, cnf.db.maxIdleConn, cnf.db.maxIdleTime)
 	if err != nil {
-		log.Panic(err)
+		logger.Panic(err)
 	}
 	defer db.Close()
-	slog.Info("🗃️ DB connection is stablished")
+	logger.Info("🗃️ DB connection is stablished")
 	store := store.NewStore(db)
-	app := application{config: cnf, store: store}
+	app := application{config: cnf, store: store, logger: logger}
 	mux := app.mount()
-	slog.Info("🛣️ Route setup is done")
-	log.Fatal(app.run(mux))
+	logger.Info("🛣️ Route setup is done")
+	logger.Fatal(app.run(mux))
 }
