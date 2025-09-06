@@ -9,7 +9,7 @@ down:
 	$(MIGRATE) -path=$(MIGRATION_DIR) -database="$(DB_URL)" down 1
 
 force-clean:
-	$(MIGRATE) -path=$(MIGRATION_DIR) -database="$(DB_URL)" force 1
+	$(MIGRATE) -path=$(MIGRATION_DIR) -database="$(DB_URL)" force ${version}
 
 version:
 	$(MIGRATE) -path=$(MIGRATION_DIR) -database="$(DB_URL)" version

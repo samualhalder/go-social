@@ -70,6 +70,8 @@ func (app *application) mount() http.Handler {
 				r.Put("/unfollow", app.unFollowUserHandler)
 			})
 		})
+		r.Post("/authinticate",)
+
 	})
 	return r
 }
