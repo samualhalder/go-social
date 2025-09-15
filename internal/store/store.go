@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var (
@@ -20,8 +21,9 @@ type Store struct {
 		GetUserFeedPosts(ctx context.Context, userId int64, p PaginatedFeedQuery) ([]PostWithMetaData, error)
 	}
 	User interface {
-		Create(context.Context, *User) error
+		Create(context.Context, *sql.Tx, *User) error
 		GetById(context.Context, int64) (*User, error)
+		CreateAndInvite(context.Context, *User, string, time.Duration) error
 	}
 	Comment interface {
 		GetCommentByPostId(context.Context, int64) ([]Comment, error)
@@ -40,4 +42,16 @@ func NewStore(db *sql.DB) Store {
 		Comment:  &CommentStore{db},
 		Follower: &FollowerStore{db},
 	}
+}
+
+func WithTx(db *sql.DB, ctx context.Context, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }

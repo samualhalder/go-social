@@ -21,12 +21,16 @@ type application struct {
 type config struct {
 	addr string
 	db   dbConfig
+	mail mailConfig
 }
 type dbConfig struct {
 	addr        string
 	maxOpenConn int
 	maxIdleConn int
 	maxIdleTime string
+}
+type mailConfig struct {
+	exp time.Duration
 }
 
 func (app *application) mount() http.Handler {
@@ -70,7 +74,7 @@ func (app *application) mount() http.Handler {
 				r.Put("/unfollow", app.unFollowUserHandler)
 			})
 		})
-		r.Post("/authinticate",)
+		r.Post("/authinticate")
 
 	})
 	return r

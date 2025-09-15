@@ -16,6 +16,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/samualhalder/go-social/docs"
@@ -30,12 +31,18 @@ func main() {
 		log.Fatal("Error while laoding .env")
 	}
 
-	cnf := config{addr: env.GetString("ADDR", ":8080"), db: dbConfig{
-		addr:        env.GetString("DB_ADDR", "postgresql://samualhalder:samualpass@localhost:5433/social?sslmode=disable"),
-		maxOpenConn: env.GetInt("MAX_OPEN_CONN", 30),
-		maxIdleConn: env.GetInt("MAX_IDLE_CONN", 30),
-		maxIdleTime: env.GetString("MAX_IDLE_TIME", "15m"),
-	}}
+	cnf := config{
+		addr: env.GetString("ADDR", ":8080"),
+		db: dbConfig{
+			addr:        env.GetString("DB_ADDR", "postgresql://samualhalder:samualpass@localhost:5433/social?sslmode=disable"),
+			maxOpenConn: env.GetInt("MAX_OPEN_CONN", 30),
+			maxIdleConn: env.GetInt("MAX_IDLE_CONN", 30),
+			maxIdleTime: env.GetString("MAX_IDLE_TIME", "15m"),
+		},
+		mail: mailConfig{
+			exp: time.Hour * 24 * 3,
+		},
+	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -35,10 +36,10 @@ type UserStore struct {
 	db *sql.DB
 }
 
-func (u *UserStore) Create(ctx context.Context, user *User) error {
+func (u *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `INSERT INTO users(username,email,password)
 	VALUES($1,$2,$3) RETURNING id,created_at`
-	err := u.db.QueryRowContext(
+	err := tx.QueryRowContext(
 		ctx,
 		query,
 		user.Username,
@@ -70,4 +71,26 @@ func (u *UserStore) GetById(ctx context.Context, userId int64) (*User, error) {
 		}
 	}
 	return user, nil
+}
+
+func (u *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, envExpriry time.Duration) error {
+	return WithTx(u.db, ctx, func(tx *sql.Tx) error {
+		if err := u.Create(ctx, tx, user); err != nil {
+			return err
+		}
+		if err := u.createUserInvitation(ctx, tx, token, envExpriry, user.Id); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (u *UserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token string, exp time.Duration, userId int64) error {
+	query := `INSERT INTO user_invitations (user_id,token,expiry) values($1,$2,$3)`
+
+	_, err := tx.ExecContext(ctx, query, userId, token, time.Now().Add(exp))
+	if err != nil {
+		return err
+	}
+	return nil
 }
