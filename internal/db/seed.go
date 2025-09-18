@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
@@ -120,11 +121,12 @@ var commentsTmp = []string{
 	"Handling dirty databases felt chaotic before—this made it manageable.",
 }
 
-func Seed(store store.Store) {
+func Seed(store store.Store, db *sql.DB) {
 	ctx := context.Background()
 	users := generateUsers(50)
+	tx, _ := db.BeginTx(ctx, nil)
 	for _, user := range users {
-		if err := store.User.Create(ctx, user); err != nil {
+		if err := store.User.Create(ctx, tx, user); err != nil {
 			log.Fatal("Error while inserting user")
 		}
 	}
@@ -149,7 +151,6 @@ func generateUsers(num int) []*store.User {
 		users[i] = &store.User{
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@gmail.com",
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
-			Password: "samual1234",
 		}
 	}
 	return users

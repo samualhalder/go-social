@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -14,10 +15,15 @@ type RegisterUserPayloadType struct {
 	Email    string `json:"email" validate:"required,max=24"`
 	Password string `json:"password" validate:"required,max=24"`
 }
+type UserWithToken struct {
+	*store.User
+	Token string `json:"token"`
+}
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("hit")
 	var registerPayload RegisterUserPayloadType
-	if err := readJSON(w, r, registerPayload); err != nil {
+	if err := readJSON(w, r, &registerPayload); err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
@@ -38,11 +44,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	hash := sha256.Sum256([]byte(plainToken)) // not readble by human so cant store in sql
 	hashToken := hex.EncodeToString(hash[:])  // readable by human a string
 
+	userWithToken := UserWithToken{
+		User:  user,
+		Token: plainToken,
+	}
+
 	if err := app.store.User.CreateAndInvite(ctx, user, hashToken, app.config.mail.exp); err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
-	if err := app.jsonResponse(w, http.StatusCreated, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, userWithToken); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

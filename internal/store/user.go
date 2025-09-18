@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -15,6 +17,7 @@ type User struct {
 	Email     string       `json:"email"`
 	Password  PasswordType `json:"-"`
 	CreatedAt string       `json:"created_at"`
+	IsActive  bool         `json:"is_active"`
 }
 
 type PasswordType struct {
@@ -44,7 +47,7 @@ func (u *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		query,
 		user.Username,
 		user.Email,
-		user.Password).Scan(&user.Id, &user.CreatedAt)
+		user.Password.hash).Scan(&user.Id, &user.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -89,6 +92,66 @@ func (u *UserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token 
 	query := `INSERT INTO user_invitations (user_id,token,expiry) values($1,$2,$3)`
 
 	_, err := tx.ExecContext(ctx, query, userId, token, time.Now().Add(exp))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserStore) Activate(ctx context.Context, token string) error {
+
+	return WithTx(u.db, ctx, func(tx *sql.Tx) error {
+		//1.find the user for the token
+		user, err := u.findUserFromInvitation(ctx, tx, token)
+		if err != nil {
+			return err
+		}
+		//2.activate user
+		user.IsActive = true
+		if err := u.update(ctx, tx, user); err != nil {
+			return err
+		}
+		//3.delete the invitiation from db
+		if err := u.deleteUserInvitation(ctx, tx, user.Id); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (u *UserStore) findUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
+	query := `SELECT a.id,a.username,a.email,a.is_active,a.created_at FROM
+			users a JOIN user_invitations b
+			ON a.id=b.user_id
+			WHERE b.token=$1 AND b.expiry>$2`
+
+	user := &User{}
+
+	hash := sha256.Sum256([]byte(token)) // not readble by human so cant store in sql
+	hashToken := hex.EncodeToString(hash[:])
+	err := tx.QueryRowContext(ctx, query, hashToken, time.Now()).Scan(&user.Id, &user.Username, &user.Email, &user.IsActive, &user.CreatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrorNotFound
+		default:
+			return nil, err
+		}
+	}
+	return user, nil
+}
+
+func (u *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
+	query := `UPDATE users SET username=$1,email=$2,is_active=$3 WHERE id=$4`
+	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsActive, user.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (u *UserStore) deleteUserInvitation(ctx context.Context, tx *sql.Tx, userId int64) error {
+	query := `DELETE FROM user_invitations where user_id=$1`
+	_, err := tx.ExecContext(ctx, query, userId)
 	if err != nil {
 		return err
 	}

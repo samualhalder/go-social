@@ -70,6 +70,26 @@ func (app *application) unFollowUserHandler(w http.ResponseWriter, r *http.Reque
 	app.jsonResponse(w, http.StatusOK, "unfollowed")
 }
 
+func (app *application) activateUserHanlder(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	ctx := r.Context()
+	err := app.store.User.Activate(ctx, token)
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.badRequest(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	if err := app.jsonResponse(w, http.StatusOK, ""); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
 func (app *application) getUserContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

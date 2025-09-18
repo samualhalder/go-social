@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -62,7 +63,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/create/{postId}", app.createComment)
 		})
 		r.Route("/users", func(r chi.Router) {
-
+			r.Put("/activate/{token}", app.activateUserHanlder)
 			r.Group(func(r chi.Router) {
 				r.Get("/feed", app.GetFeedForUser)
 			})
@@ -74,7 +75,10 @@ func (app *application) mount() http.Handler {
 				r.Put("/unfollow", app.unFollowUserHandler)
 			})
 		})
-		r.Post("/authinticate")
+		r.Route("/authinticate", func(r chi.Router) {
+			fmt.Print("hit1")
+			r.Post("/user", app.registerUserHandler)
+		})
 
 	})
 	return r
