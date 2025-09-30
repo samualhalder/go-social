@@ -22,6 +22,7 @@ import (
 	_ "github.com/samualhalder/go-social/docs"
 	"github.com/samualhalder/go-social/internal/db"
 	"github.com/samualhalder/go-social/internal/env"
+	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store" // swagger docs
 	"go.uber.org/zap"
 )
@@ -32,7 +33,9 @@ func main() {
 	}
 
 	cnf := config{
-		addr: env.GetString("ADDR", ":8080"),
+		addr:        env.GetString("ADDR", ":8080"),
+		env:         env.GetString("ENV", "development"),
+		frontEndURL: env.GetString("FRONT_END_URL", "http://localhost:5173"),
 		db: dbConfig{
 			addr:        env.GetString("DB_ADDR", "postgresql://samualhalder:samualpass@localhost:5433/social?sslmode=disable"),
 			maxOpenConn: env.GetInt("MAX_OPEN_CONN", 30),
@@ -40,7 +43,11 @@ func main() {
 			maxIdleTime: env.GetString("MAX_IDLE_TIME", "15m"),
 		},
 		mail: mailConfig{
-			exp: time.Hour * 24 * 3,
+			exp:      time.Hour * 24 * 3,
+			fromUser: env.GetString("FROM_USER", ""),
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
 		},
 	}
 
@@ -54,7 +61,7 @@ func main() {
 	defer db.Close()
 	logger.Info("🗃️ DB connection is stablished")
 	store := store.NewStore(db)
-	app := application{config: cnf, store: store, logger: logger}
+	app := application{config: cnf, store: store, logger: logger, mailer: mailer.NewSendGrid(cnf.mail.fromUser, cnf.mail.sendGrid.apiKey)}
 	mux := app.mount()
 	logger.Info("🛣️ Route setup is done")
 	logger.Fatal(app.run(mux))

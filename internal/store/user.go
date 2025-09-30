@@ -157,3 +157,25 @@ func (u *UserStore) deleteUserInvitation(ctx context.Context, tx *sql.Tx, userId
 	}
 	return nil
 }
+
+func (u *UserStore) delete(ctx context.Context, tx *sql.Tx, userId int64) error {
+	query := `DELETE FROM users WHERE id=$1`
+	_, err := tx.ExecContext(ctx, query, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (u *UserStore) Delete(ctx context.Context, userId int64) error {
+	return WithTx(u.db, ctx, func(tx *sql.Tx) error {
+		err := u.delete(ctx, tx, userId)
+		if err != nil {
+			return err
+		}
+		err = u.deleteUserInvitation(ctx, tx, userId)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}

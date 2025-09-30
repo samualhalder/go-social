@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store"
 	"go.uber.org/zap"
 
@@ -18,12 +19,17 @@ type application struct {
 	config config
 	store  store.Store
 	logger *zap.SugaredLogger
+	mailer mailer.Client
 }
+
 type config struct {
-	addr string
-	db   dbConfig
-	mail mailConfig
+	addr        string
+	db          dbConfig
+	mail        mailConfig
+	env         string
+	frontEndURL string
 }
+
 type dbConfig struct {
 	addr        string
 	maxOpenConn int
@@ -31,7 +37,12 @@ type dbConfig struct {
 	maxIdleTime string
 }
 type mailConfig struct {
-	exp time.Duration
+	exp      time.Duration
+	fromUser string
+	sendGrid sendGridConfig
+}
+type sendGridConfig struct {
+	apiKey string
 }
 
 func (app *application) mount() http.Handler {

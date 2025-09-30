@@ -1,0 +1,66 @@
+{{ define "subject" }} Finsh Rejester with GO SOCIAL {{end}}
+{{define "body"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Activation Link For GO-SOCIAL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f6f9fc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        .content {
+            font-size: 16px;
+            color: #555555;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 18px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 13px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Activation Link For GO-SOCIAL</div>
+        <div class="content">
+            Please click the below button to activate you accont with username {{ .Username}}
+        </div>
+        <div>
+            <a href="{{ .ActivationURL }}" class="button">CLICK HERE</a>
+        </div>
+        <div class="footer">
+            &copy; 2025 GO-SOCIAL. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
+{{ end }}

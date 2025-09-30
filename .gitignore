@@ -27,6 +27,7 @@ go.work.sum
 *.swp
 *.sublime-workspace
 *.sublime-project
+.env
 
 # Logs and temp files
 *.log
