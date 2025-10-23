@@ -24,3 +24,8 @@ func (app *application) ConflictError(w http.ResponseWriter, r *http.Request, er
 	app.logger.Errorw("Conflict Error", "Methode", r.Method, "Path", r.URL.Path, "error", err.Error())
 	writeJSONError(w, http.StatusBadRequest, err.Error())
 }
+func (app *application) AuthorizationError(w http.ResponseWriter, r *http.Request, err error) {
+	// log.Printf("Conflict Error: %s,err: %s,path: %s", r.Method, r.URL.Path, err.Error())
+	app.logger.Errorw("Authorization Error", "Methode", r.Method, "Path", r.URL.Path, "error", err.Error())
+	writeJSONError(w, http.StatusUnauthorized, err.Error())
+}

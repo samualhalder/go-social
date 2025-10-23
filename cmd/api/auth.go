@@ -66,9 +66,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Username:      user.Username,
 	}
 
+	// sending mail
+
 	err := app.mailer.Send(mailer.UserRegisterMailTemplate, user.Username, user.Email, vars, !isProdEnv)
 	if err != nil {
-		//TODO: delete the user and delete the token from db
+
 		if err := app.store.User.Delete(ctx, user.Id); err != nil {
 			app.logger.Errorw("Error Deleting", "user", err.Error())
 		}
