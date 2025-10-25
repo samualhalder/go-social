@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/samualhalder/go-social/internal/auth"
 	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store"
 	"go.uber.org/zap"
@@ -16,10 +16,11 @@ import (
 )
 
 type application struct {
-	config config
-	store  store.Store
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	config        config
+	store         store.Store
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator *auth.JWTAuthenticator
 }
 
 type config struct {
@@ -33,6 +34,12 @@ type config struct {
 
 type authConfig struct {
 	basic basicConfig
+	token tokenConfig
+}
+type tokenConfig struct {
+	secret string
+	expiry time.Duration
+	issuer string
 }
 type basicConfig struct {
 	username string
@@ -96,8 +103,8 @@ func (app *application) mount() http.Handler {
 			})
 		})
 		r.Route("/authinticate", func(r chi.Router) {
-			fmt.Print("hit1")
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 
 	})

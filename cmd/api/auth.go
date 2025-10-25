@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store"
@@ -22,7 +24,6 @@ type UserWithToken struct {
 }
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("hit")
 	var registerPayload RegisterUserPayloadType
 	if err := readJSON(w, r, &registerPayload); err != nil {
 		app.badRequest(w, r, err)
@@ -81,5 +82,50 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.jsonResponse(w, http.StatusCreated, userWithToken); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+}
+
+type tokenPayloadType struct {
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var tokenPayload tokenPayloadType
+	if err := readJSON(w, r, &tokenPayload); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+	if err := Validate.Struct(tokenPayload); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	user, err := app.store.User.GetByEmail(r.Context(), tokenPayload.Email)
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.AuthorizationError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+	claims := jwt.MapClaims{
+		"sub": user.Id,
+		"exp": time.Now().Add(app.config.auth.token.expiry).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.issuer,
+		"aud": app.config.auth.token.issuer,
+	}
+	token, err := app.authenticator.GenarateToken(claims)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusOK, token); err != nil {
+		app.internalServerError(w, r, err)
 	}
 }

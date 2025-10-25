@@ -20,6 +20,7 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/samualhalder/go-social/docs"
+	"github.com/samualhalder/go-social/internal/auth"
 	"github.com/samualhalder/go-social/internal/db"
 	"github.com/samualhalder/go-social/internal/env"
 	"github.com/samualhalder/go-social/internal/mailer"
@@ -54,6 +55,11 @@ func main() {
 				username: "sam",
 				pass:     "sam",
 			},
+			token: tokenConfig{
+				secret: env.GetString("JWT_SECRET", "itsasecretok2323"),
+				expiry: time.Hour * 3 * 24,
+				issuer: env.GetString("TOKEN_ISSUER", "GO_SOCIAL"),
+			},
 		},
 	}
 
@@ -67,7 +73,13 @@ func main() {
 	defer db.Close()
 	logger.Info("🗃️ DB connection is stablished")
 	store := store.NewStore(db)
-	app := application{config: cnf, store: store, logger: logger, mailer: mailer.NewSendGrid(cnf.mail.fromUser, cnf.mail.sendGrid.apiKey)}
+
+	app := application{
+		config: cnf,
+		store:  store, logger: logger,
+		mailer:        mailer.NewSendGrid(cnf.mail.fromUser, cnf.mail.sendGrid.apiKey),
+		authenticator: auth.NewJWTAuthenticator(cnf.auth.token.secret, cnf.auth.token.issuer, cnf.auth.token.issuer),
+	}
 	mux := app.mount()
 	logger.Info("🛣️ Route setup is done")
 	logger.Fatal(app.run(mux))

@@ -141,6 +141,21 @@ func (u *UserStore) findUserFromInvitation(ctx context.Context, tx *sql.Tx, toke
 	return user, nil
 }
 
+func (u *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id,email,username,created_at FROM users where email=$1 AND is_active=true`
+	user := &User{}
+	err := u.db.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Email, &user.Username, &user.CreatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrorNotFound
+		default:
+			return nil, err
+		}
+	}
+	return user, nil
+}
+
 func (u *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `UPDATE users SET username=$1,email=$2,is_active=$3 WHERE id=$4`
 	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsActive, user.Id)
