@@ -41,11 +41,13 @@ func (app *application) createPost(w http.ResponseWriter, r *http.Request) {
 		app.badRequest(w, r, err)
 		return
 	}
+
+	user := getUserFromContext(r)
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		UserId:  2,
+		UserId:  user.Id,
 	}
 	ctx := r.Context()
 

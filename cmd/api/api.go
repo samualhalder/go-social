@@ -78,6 +78,7 @@ func (app *application) mount() http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.With(app.BaiscAuthMiddleware()).Get("/health", app.healthCheck)
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
 			r.Post("/create", app.createPost)
 			r.Route("/{postId}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
@@ -92,10 +93,12 @@ func (app *application) mount() http.Handler {
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHanlder)
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/feed", app.GetFeedForUser)
 			})
 			r.Route("/{userId}", func(r chi.Router) {
-				r.Use(app.getUserContext)
+				r.Use(app.AuthTokenMiddleware)
+
 				r.Get("/", app.getUserHandler)
 				r.Post("/follow", app.followUserHandler)
 				//TODO: will make it delete req when we add authintication via tokens

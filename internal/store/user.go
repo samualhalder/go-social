@@ -64,7 +64,7 @@ func (u *UserStore) GetById(ctx context.Context, userId int64) (*User, error) {
 	user := &User{}
 	err := u.db.
 		QueryRowContext(ctx, query, userId).
-		Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt)
+		Scan(&user.Id, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

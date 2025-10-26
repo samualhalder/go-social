@@ -21,23 +21,17 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type FollowerPaylaod struct {
-	UserId int64 `json:"user_id"`
-}
-
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	var followerPayload FollowerPaylaod
+
 	user := getUserFromContext(r)
+	followedId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
 	ctx := r.Context()
-	if err := readJSON(w, r, &followerPayload); err != nil {
-		app.badRequest(w, r, err)
-		return
-	}
-	if err := Validate.Struct(followerPayload); err != nil {
-		app.badRequest(w, r, err)
-		return
-	}
-	if err := app.store.Follower.Follow(ctx, user.Id, followerPayload.UserId); err != nil {
+
+	if err := app.store.Follower.Follow(ctx, followedId, user.Id); err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
@@ -45,18 +39,16 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) unFollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	var followerPayload FollowerPaylaod
+
 	user := getUserFromContext(r)
 	ctx := r.Context()
-	if err := readJSON(w, r, &followerPayload); err != nil {
+	followedId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
-	if err := Validate.Struct(followerPayload); err != nil {
-		app.badRequest(w, r, err)
-		return
-	}
-	if err := app.store.Follower.UnFollow(ctx, user.Id, followerPayload.UserId); err != nil {
+
+	if err := app.store.Follower.UnFollow(ctx, followedId, user.Id); err != nil {
 		switch err {
 		case store.ErrConflict:
 			app.ConflictError(w, r, err)
