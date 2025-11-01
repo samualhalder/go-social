@@ -15,7 +15,7 @@ type User struct {
 	Id        int64        `json:"id"`
 	Username  string       `json:"username"`
 	Email     string       `json:"email"`
-	Password  PasswordType `json:"-"`
+	Password  PasswordType `json:"password"`
 	CreatedAt string       `json:"created_at"`
 	IsActive  bool         `json:"is_active"`
 }
@@ -33,6 +33,9 @@ func (p *PasswordType) Set(text string) error {
 	p.password = &text
 	p.hash = hash
 	return nil
+}
+func (p *PasswordType) Check(text string) error {
+	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
 }
 
 type UserStore struct {
@@ -142,9 +145,9 @@ func (u *UserStore) findUserFromInvitation(ctx context.Context, tx *sql.Tx, toke
 }
 
 func (u *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
-	query := `SELECT id,email,username,created_at FROM users where email=$1 AND is_active=true`
+	query := `SELECT id,email,username,created_at,password FROM users where email=$1 AND is_active=true`
 	user := &User{}
-	err := u.db.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Email, &user.Username, &user.CreatedAt)
+	err := u.db.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Email, &user.Username, &user.CreatedAt, &user.Password.hash)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

@@ -111,6 +111,12 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
+
+	if err := user.Password.Check(tokenPayload.Password); err != nil {
+		app.AuthorizationError(w, r, err)
+		return
+	}
+
 	claims := jwt.MapClaims{
 		"sub": user.Id,
 		"exp": time.Now().Add(app.config.auth.token.expiry).Unix(),
