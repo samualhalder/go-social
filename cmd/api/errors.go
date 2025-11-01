@@ -27,5 +27,11 @@ func (app *application) ConflictError(w http.ResponseWriter, r *http.Request, er
 func (app *application) AuthorizationError(w http.ResponseWriter, r *http.Request, err error) {
 	// log.Printf("Conflict Error: %s,err: %s,path: %s", r.Method, r.URL.Path, err.Error())
 	app.logger.Errorw("Authorization Error", "Methode", r.Method, "Path", r.URL.Path, "error", err.Error())
-	writeJSONError(w, http.StatusUnauthorized, "Wrong Credentials")
+	writeJSONError(w, http.StatusUnauthorized, err.Error())
+}
+
+func (app *application) forbiddenError(w http.ResponseWriter, r *http.Request) {
+	// log.Printf("Conflict Error: %s,err: %s,path: %s", r.Method, r.URL.Path, err.Error())
+	app.logger.Warnw("Forbidden Error", "Methode", r.Method, "Path", r.URL.Path, "error", "forbidden")
+	writeJSONError(w, http.StatusForbidden, "forbidden")
 }

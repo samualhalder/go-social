@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -73,18 +74,19 @@ func (app *application) mount() http.Handler {
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
+	fmt.Printf("hti here")
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.With(app.BaiscAuthMiddleware()).Get("/health", app.healthCheck)
+		r.Get("/health", app.healthCheck)
 		r.Route("/posts", func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Post("/create", app.createPost)
 			r.Route("/{postId}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
 				r.Get("/", app.getPostHandler)
-				r.Delete("/", app.deletePostById)
-				r.Patch("/", app.updatePostById)
+				r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostById))
+				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostById))
 			})
 		})
 		r.Route("/comments", func(r chi.Router) {

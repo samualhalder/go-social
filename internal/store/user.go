@@ -18,6 +18,8 @@ type User struct {
 	Password  PasswordType `json:"password"`
 	CreatedAt string       `json:"created_at"`
 	IsActive  bool         `json:"is_active"`
+	Role      Role         `json:"role"`
+	RoleId    int64        `json:"role_id"`
 }
 
 type PasswordType struct {
@@ -43,14 +45,14 @@ type UserStore struct {
 }
 
 func (u *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
-	query := `INSERT INTO users(username,email,password)
-	VALUES($1,$2,$3) RETURNING id,created_at`
+	query := `INSERT INTO users(username,email,password,role_id)
+	VALUES($1,$2,$3,$4) RETURNING id,created_at`
 	err := tx.QueryRowContext(
 		ctx,
 		query,
 		user.Username,
 		user.Email,
-		user.Password.hash).Scan(&user.Id, &user.CreatedAt)
+		user.Password.hash, user.Role.Id).Scan(&user.Id, &user.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -63,11 +65,11 @@ func (u *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 }
 
 func (u *UserStore) GetById(ctx context.Context, userId int64) (*User, error) {
-	query := `SELECT id,username,email,password,created_at FROM users WHERE id=$1`
+	query := `SELECT a.id,a.username,a.email,a.password,a.created_at,b.id,b.name,b.description,b.level FROM users a JOIN roles b ON a.role_id=b.id WHERE a.id=$1`
 	user := &User{}
 	err := u.db.
 		QueryRowContext(ctx, query, userId).
-		Scan(&user.Id, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt)
+		Scan(&user.Id, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt, &user.Role.Id, &user.Role.Name, &user.Role.Description, &user.Role.Level)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
