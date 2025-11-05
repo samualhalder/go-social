@@ -18,6 +18,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	_ "github.com/samualhalder/go-social/docs"
 	"github.com/samualhalder/go-social/internal/auth"
@@ -25,6 +26,7 @@ import (
 	"github.com/samualhalder/go-social/internal/env"
 	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store" // swagger docs
+	"github.com/samualhalder/go-social/internal/store/cache"
 	"go.uber.org/zap"
 )
 
@@ -61,6 +63,12 @@ func main() {
 				issuer: env.GetString("TOKEN_ISSUER", "GO_SOCIAL"),
 			},
 		},
+		redisCfg: RedisConfig{
+			addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+			pw:      env.GetString("REDIS_PASSWORD", ""),
+			db:      env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("REDIS_ENABLED", true),
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -74,9 +82,18 @@ func main() {
 	logger.Info("🗃️ DB connection is stablished")
 	store := store.NewStore(db)
 
+	var rdb *redis.Client
+
+	if cnf.redisCfg.enabled {
+		rdb = cache.NewRedisClient(cnf.redisCfg.addr, cnf.redisCfg.pw, cnf.redisCfg.db)
+		logger.Info("🗄️ redis cache connection is stablished")
+	}
+	cacheStore := cache.NewRedisStore(rdb)
+	rdb.SetEX(rdb.Context(), "user-1", "test", time.Hour)
 	app := application{
 		config: cnf,
 		store:  store, logger: logger,
+		cacheStorage:  cacheStore,
 		mailer:        mailer.NewSendGrid(cnf.mail.fromUser, cnf.mail.sendGrid.apiKey),
 		authenticator: auth.NewJWTAuthenticator(cnf.auth.token.secret, cnf.auth.token.issuer, cnf.auth.token.issuer),
 	}

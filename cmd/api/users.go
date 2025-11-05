@@ -14,7 +14,21 @@ type UserType string
 var userCtx UserType = "user"
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r)
+	ctx := r.Context()
+	id, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+	user, err := app.store.User.GetById(ctx, id)
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.notFound(w, r, err)
+		default:
+			app.badRequest(w, r, err)
+		}
+	}
 	if err := writeJSON(w, http.StatusOK, user); err != nil {
 		app.badRequest(w, r, err)
 		return

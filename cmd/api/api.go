@@ -11,6 +11,7 @@ import (
 	"github.com/samualhalder/go-social/internal/auth"
 	"github.com/samualhalder/go-social/internal/mailer"
 	"github.com/samualhalder/go-social/internal/store"
+	"github.com/samualhalder/go-social/internal/store/cache"
 	"go.uber.org/zap"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -19,6 +20,7 @@ import (
 type application struct {
 	config        config
 	store         store.Store
+	cacheStorage  cache.Store
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator *auth.JWTAuthenticator
@@ -31,6 +33,7 @@ type config struct {
 	env         string
 	frontEndURL string
 	auth        authConfig
+	redisCfg    RedisConfig
 }
 
 type authConfig struct {
@@ -60,6 +63,12 @@ type mailConfig struct {
 }
 type sendGridConfig struct {
 	apiKey string
+}
+type RedisConfig struct {
+	addr    string
+	pw      string
+	db      int
+	enabled bool
 }
 
 func (app *application) mount() http.Handler {

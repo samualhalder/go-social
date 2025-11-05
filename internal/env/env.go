@@ -23,3 +23,15 @@ func GetInt(key string, fallback int) int {
 	}
 	return valAsInd
 }
+
+func GetBool(key string, fallback bool) bool {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+	valAsInd, err := strconv.ParseBool(val)
+	if err != nil {
+		return fallback
+	}
+	return valAsInd
+}

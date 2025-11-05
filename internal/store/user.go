@@ -52,7 +52,7 @@ func (u *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		query,
 		user.Username,
 		user.Email,
-		user.Password.hash, user.Role.Id).Scan(&user.Id, &user.CreatedAt)
+		user.Password.hash, 1).Scan(&user.Id, &user.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

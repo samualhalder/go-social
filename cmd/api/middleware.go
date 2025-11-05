@@ -48,6 +48,7 @@ func (app *application) BaiscAuthMiddleware() func(http.Handler) http.Handler {
 
 func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			app.AuthorizationError(w, r, fmt.Errorf("authorization token is missing"))
@@ -73,7 +74,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := r.Context()
-		user, err := app.store.User.GetById(ctx, userId)
+		user, err := app.getUser(ctx, userId)
 		if err != nil {
 			app.AuthorizationError(w, r, err)
 			return
@@ -112,4 +113,24 @@ func (app *application) checkRolePrecedence(ctx context.Context, user *store.Use
 
 	return user.Role.Level >= role.Level, err
 
+}
+
+func (app *application) getUser(ctx context.Context, userId int64) (*store.User, error) {
+
+	user, err := app.cacheStorage.User.Get(ctx, userId)
+
+	if user == nil {
+
+		user, err = app.store.User.GetById(ctx, userId)
+
+		if err != nil {
+			return nil, err
+		}
+		if err := app.cacheStorage.User.Set(ctx, user); err != nil {
+			return nil, err
+		}
+
+		return user, nil
+	}
+	return user, nil
 }
