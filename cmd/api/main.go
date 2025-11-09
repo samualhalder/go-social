@@ -89,7 +89,7 @@ func main() {
 		logger.Info("🗄️ redis cache connection is stablished")
 	}
 	cacheStore := cache.NewRedisStore(rdb)
-	rdb.SetEX(rdb.Context(), "user-1", "test", time.Hour)
+
 	app := application{
 		config: cnf,
 		store:  store, logger: logger,

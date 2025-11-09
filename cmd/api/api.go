@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -133,6 +138,29 @@ func (app *application) run(mux http.Handler) error {
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Second,
 	}
+	shutdown := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		app.logger.Info("signal caught", "signal", s.String())
+		shutdown <- srv.Shutdown(ctx)
+
+	}()
 	app.logger.Info("🌐Server is running on", slog.String("port", srv.Addr))
-	return srv.ListenAndServe()
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Info("server has stopped", "addr", app.config.addr)
+	return nil
 }
