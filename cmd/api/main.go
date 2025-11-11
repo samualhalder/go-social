@@ -25,6 +25,7 @@ import (
 	"github.com/samualhalder/go-social/internal/db"
 	"github.com/samualhalder/go-social/internal/env"
 	"github.com/samualhalder/go-social/internal/mailer"
+	"github.com/samualhalder/go-social/internal/ratelimiter"
 	"github.com/samualhalder/go-social/internal/store" // swagger docs
 	"github.com/samualhalder/go-social/internal/store/cache"
 	"go.uber.org/zap"
@@ -69,6 +70,11 @@ func main() {
 			db:      env.GetInt("REDIS_DB", 0),
 			enabled: env.GetBool("REDIS_ENABLED", true),
 		},
+		ratelimiter: ratelimiter.Config{
+			RequestPerTimeFrame: env.GetInt("REQUEST_PER_TIME_FRAME", 20),
+			TimeFrame:           time.Second * 5,
+			Enabled:             env.GetBool("RATELIMITER_ENABLED", true),
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -90,12 +96,15 @@ func main() {
 	}
 	cacheStore := cache.NewRedisStore(rdb)
 
+	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(cnf.ratelimiter.RequestPerTimeFrame, cnf.ratelimiter.TimeFrame)
+
 	app := application{
 		config: cnf,
 		store:  store, logger: logger,
 		cacheStorage:  cacheStore,
 		mailer:        mailer.NewSendGrid(cnf.mail.fromUser, cnf.mail.sendGrid.apiKey),
 		authenticator: auth.NewJWTAuthenticator(cnf.auth.token.secret, cnf.auth.token.issuer, cnf.auth.token.issuer),
+		ratelimiter:   ratelimiter,
 	}
 	mux := app.mount()
 	logger.Info("🛣️ Route setup is done")

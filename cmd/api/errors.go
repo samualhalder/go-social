@@ -35,3 +35,9 @@ func (app *application) forbiddenError(w http.ResponseWriter, r *http.Request) {
 	app.logger.Warnw("Forbidden Error", "Methode", r.Method, "Path", r.URL.Path, "error", "forbidden")
 	writeJSONError(w, http.StatusForbidden, "forbidden")
 }
+func (app *application) rateLimitExcedError(w http.ResponseWriter, r *http.Request, time string) {
+	// log.Printf("Conflict Error: %s,err: %s,path: %s", r.Method, r.URL.Path, err.Error())
+	app.logger.Warnw("Rate Limit Exced Error", "Methode", r.Method, "Path", r.URL.Path, "retry after: "+time)
+	w.Header().Set("Retry-After", time)
+	writeJSONError(w, http.StatusTooManyRequests, "rate limit exced")
+}
